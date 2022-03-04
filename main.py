@@ -1,16 +1,22 @@
-# This is a sample Python script.
+import pandas as pd
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
-
-
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+ALCOHOL_COLUMN = 'Alcohol'
+FAT_COLUMN = 'Grasas_sat'
+CALORIES_COLUMN = 'Calorías'
 
 
-# Press the green button in the gutter to run the script.
+def replace_by_mean(data, column, empty_value = 999.99):
+    filtered_data = data[data[column] != empty_value]
+    mean = filtered_data[column].mean()
+    data.loc[data[column] == empty_value, column] = mean
+    return data
+
+
 if __name__ == '__main__':
-    print_hi('PyCharm')
+    data = pd.read_excel('Datos trabajo 1.xls')
+    replace_by_mean(data, ALCOHOL_COLUMN)
+    replace_by_mean(data, FAT_COLUMN)
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    print(data)
+
+
