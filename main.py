@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+from math import sqrt
 import pandas as pd
 import matplotlib.pyplot as plt
 from argparse import ArgumentParser
@@ -74,11 +75,13 @@ def print_statistics(title, data, column):
     print('******************************************')
     print(title)
     print()
+    n=data[column].size
     print(f'Mean: {data[column].mean()}')
     print(f'Mode: {data[column].mode()[0]}')
     print(f'Median: {data[column].median()}')
     print(f'Std. deviation: {data[column].std()}')
     print(f'Q1: {q1} | IQR: {iqr} | Q3: {q3}')
+    print(f'Skewness: {data[column].skew()*(n-2)/sqrt(n*(n-1))}')
     print(f'Correlation:\n {data.corr()}')
     print('******************************************')
 
@@ -102,7 +105,7 @@ if __name__ == '__main__':
                         help="Path to excel file", metavar="FILE")
     parser.add_argument("-c", "--column", dest="column", default='alcohol',
                         help="Name of column to analyze [alcohol | fat | calories]")
-    parser.add_argument("-c2", "--column2", dest="column2", default='calories',
+    parser.add_argument("-c2", "--column2", dest="column2", default='',
                         help="Name of column to compare against [alcohol | fat | calories]")
     parser.add_argument("-s", "--statistic", dest="statistic", default='mean',
                         help="Statistic to use to replace missing values [mean | median | mode]")
@@ -114,6 +117,8 @@ if __name__ == '__main__':
     data = pd.read_excel(args.filename)
 
     column = parseColumn(args.column)
+    if args.column2 == '':
+        args.column2 = args.column
     column2 = parseColumn(args.column2)
 
     data = replace_by_statistic(args.statistic, data, column, column2)
