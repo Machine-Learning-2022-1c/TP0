@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import pandas as pd
 import matplotlib.pyplot as plt
 from argparse import ArgumentParser
@@ -7,27 +9,33 @@ FAT_COLUMN = 'Grasas_sat'
 CALORIES_COLUMN = 'Calorías'
 SEX_COLUMN = 'Sexo'
 
-
-def replace_by_statistic(statistic, data, column, empty_value=999.99):
-    filtered_data = data[data[column] != empty_value]
-
-    statistic_value = 0
+def get_statistic(statistic, data, column, empty_value):
     if statistic == 'mean':
-        statistic_value = filtered_data[column].mean()
+        return data[data[column] != empty_value][column].mean()
     elif statistic == 'mode':
-        statistic_value = filtered_data[column].mode()[0]
+        return data[data[column] != empty_value][column].mode()[0]
     elif statistic == 'median':
-        statistic_value = filtered_data[column].median()
+        return data[data[column] != empty_value][column].median()
 
-    data.loc[data[column] == empty_value, column] = statistic_value
+def replace_by_statistic(statistic, data, column, column2, empty_value=999.99):
+    if statistic == 'remove':
+        return data[(data[column] != empty_value) & (data[column2] != empty_value)]
 
-    return statistic_value
-
+    data.loc[data[column] == empty_value, column] = get_statistic(statistic, data, column, empty_value)
+    data.loc[data[column2] == empty_value, column2] = get_statistic(statistic, data, column2, empty_value)
+    return data
 
 def boxplot_figure(data, title):
     plt.figure()
     plt.title(title)
     plt.boxplot(data)
+
+def scatter(data,x,y):
+    plt.figure()
+    plt.plot(data[x],data[y],'o')
+    plt.title(f'{y} vs {x}')
+    plt.xlabel(x)
+    plt.ylabel(y)
 
 
 def plot_by_sex(data, column):
@@ -74,6 +82,18 @@ def print_statistics(title, data, column):
     print(f'Correlation:\n {data.corr()}')
     print('******************************************')
 
+def parseColumn(arg):
+    column = ''
+    if arg == 'alcohol':
+        column = ALCOHOL_COLUMN
+    elif arg == 'fat':
+        column = FAT_COLUMN
+    elif arg == 'calories':
+        column = CALORIES_COLUMN
+    else:
+        print('Invalid column, option must be either [alcohol | fat | calories]')
+        exit()
+    return column
 
 if __name__ == '__main__':
 
@@ -82,27 +102,21 @@ if __name__ == '__main__':
                         help="Path to excel file", metavar="FILE")
     parser.add_argument("-c", "--column", dest="column", default='alcohol',
                         help="Name of column to analyze [alcohol | fat | calories]")
+    parser.add_argument("-c2", "--column2", dest="column2", default='calories',
+                        help="Name of column to compare against [alcohol | fat | calories]")
     parser.add_argument("-s", "--statistic", dest="statistic", default='mean',
                         help="Statistic to use to replace missing values [mean | median | mode]")
     parser.add_argument("-p", "--plot", dest="plot", default='population',
-                        help="Name of the plot [population | sex | calories]")
+                        help="Name of the plot [population | sex | calories | scatter]")
 
     args = parser.parse_args()
 
     data = pd.read_excel(args.filename)
 
-    column = ''
-    if args.column == 'alcohol':
-        column = ALCOHOL_COLUMN
-    elif args.column == 'fat':
-        column = FAT_COLUMN
-    elif args.column == 'calories':
-        column = CALORIES_COLUMN
-    else:
-        print('Invalid column, option must be either [alcohol | fat | calories]')
-        exit()
+    column = parseColumn(args.column)
+    column2 = parseColumn(args.column2)
 
-    replace_by_statistic(args.statistic, data, column)
+    data = replace_by_statistic(args.statistic, data, column, column2)
 
     if args.plot == 'population':
         boxplot_figure(data[column], f'Population {column}')
@@ -116,6 +130,8 @@ if __name__ == '__main__':
         print_statistics(f'CATE 1 {column} Statistics', result["cate1"], column)
         print_statistics(f'CATE 2 {column} Statistics', result["cate2"], column)
         print_statistics(f'CATE 3 {column} Statistics', result["cate3"], column)
+    elif args.plot == 'scatter':
+        scatter(data, column, column2)
 
     plt.show()
 
